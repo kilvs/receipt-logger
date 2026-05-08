@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Receipt Logger</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f5f2ed;
+      --surface: #ffffff;
+      --border: #e0dbd3;
+      --border-focus: #b5a898;
+      --text: #1a1714;
+      --text-secondary: #6b6560;
+      --text-muted: #a09890;
+      --accent: #2d5a3d;
+      --accent-hover: #234830;
+      --accent-text: #ffffff;
+      --danger: #c0392b;
+      --success-bg: #edf5f0;
+      --success-border: #a8d5b5;
+      --success-text: #1e5c34;
+      --warning-bg: #fdf8ed;
+      --warning-border: #e8d5a3;
+      --warning-text: #7a5c1e;
+      --radius: 10px;
+      --radius-sm: 6px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0 0 40px;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-icon {
+      width: 34px; height: 34px;
+      background: var(--accent);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .header-icon svg { width: 18px; height: 18px; color: white; }
+    .header-title { font-size: 16px; font-weight: 600; letter-spacing: -0.2px; }
+    .header-sub { font-size: 12px; color: var(--text-muted); font-family: 'DM Mono', monospace; margin-top: 1px; }
+
+    /* ── Container ── */
+    .container { max-width: 480px; margin: 0 auto; padding: 20px 16px; }
+
+    /* ── Setup Banner ── */
+    .setup-banner {
+      background: var(--warning-bg);
+      border: 1px solid var(--warning-border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .setup-banner svg { width: 16px; height: 16px; color: var(--warning-text); flex-shrink: 0; margin-top: 1px; }
+    .setup-banner-text { font-size: 12px; color: var(--warning-text); line-height: 1.5; }
+    .setup-banner-text strong { font-weight: 600; }
+    .setup-banner.hidden { display: none; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow);
+    }
+    .card-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* ── Form Elements ── */
+    .field { margin-bottom: 12px; }
+    .field:last-child { margin-bottom: 0; }
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 5px;
+    }
+    input[type="text"],
+    input[type="url"],
+    input[type="date"] {
+      width: 100%;
+      height: 42px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+    input[type="text"]:focus,
+    input[type="url"]:focus,
+    input[type="date"]:focus {
+      border-color: var(--border-focus);
+      background: white;
+    }
+    input::placeholder { color: var(--text-muted); }
+
+    /* ── Upload Zone ── */
+    .upload-zone {
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 28px 16px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.15s, border-color 0.15s;
+      background: var(--bg);
+    }
+    .upload-zone:hover { background: #eeeae4; border-color: var(--border-focus); }
+    .upload-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .upload-zone svg { width: 28px; height: 28px; color: var(--text-muted); margin-bottom: 8px; }
+    .upload-zone-title { font-size: 14px; font-weight: 500; color: var(--text-secondary); }
+    .upload-zone-hint { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .preview-wrap { margin-top: 12px; display: none; }
+    .preview-wrap img {
+      width: 100%; max-height: 220px; object-fit: cover;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    .preview-name {
+      font-size: 11px; color: var(--text-muted);
+      font-family: 'DM Mono', monospace;
+      margin-top: 6px; text-align: center;
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-block; font-size: 10px; padding: 2px 7px;
+      border-radius: 99px; font-weight: 500; vertical-align: middle; margin-left: 5px;
+      background: var(--warning-bg); color: var(--warning-text); border: 1px solid var(--warning-border);
+    }
+
+    /* ── Submit Button ── */
+    .submit-btn {
+      width: 100%; height: 48px;
+      background: var(--accent); color: var(--accent-text);
+      border: none; border-radius: var(--radius);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .submit-btn:hover:not(:disabled) { background: var(--accent-hover); }
+    .submit-btn:active:not(:disabled) { transform: scale(0.99); }
+    .submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .submit-btn svg { width: 18px; height: 18px; }
+
+    /* ── Progress ── */
+    .progress-wrap { margin-top: 12px; display: none; }
+    .progress-track {
+      height: 4px; background: var(--border);
+      border-radius: 99px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; background: var(--accent);
+      width: 0%; transition: width 0.4s ease;
+      border-radius: 99px;
+    }
+    .progress-label {
+      font-size: 12px; color: var(--text-secondary);
+      margin-top: 6px; text-align: center;
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* ── Status ── */
+    .status { font-size: 13px; margin-top: 10px; text-align: center; min-height: 20px; }
+    .status.error { color: var(--danger); }
+    .status.info { color: var(--text-secondary); }
+
+    /* ── Success Card ── */
+    .success-card {
+      background: var(--success-bg);
+      border: 1px solid var(--success-border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-top: 12px;
+      display: none;
+    }
+    .success-header {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 10px;
+    }
+    .success-header svg { width: 18px; height: 18px; color: var(--success-text); flex-shrink: 0; }
+    .success-header span { font-size: 14px; font-weight: 600; color: var(--success-text); }
+    .success-row {
+      display: flex; justify-content: space-between;
+      font-size: 12px; padding: 5px 0;
+      border-bottom: 1px solid var(--success-border);
+      gap: 12px;
+    }
+    .success-row:last-of-type { border-bottom: none; }
+    .success-row .key { color: var(--text-muted); font-family: 'DM Mono', monospace; flex-shrink: 0; }
+    .success-row .val { color: var(--text); text-align: right; word-break: break-all; }
+    .reset-btn {
+      margin-top: 12px; width: 100%; height: 38px;
+      background: transparent; border: 1px solid var(--success-border);
+      border-radius: var(--radius-sm); color: var(--success-text);
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .reset-btn:hover { background: rgba(0,0,0,0.04); }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center; margin-top: 24px;
+      font-size: 11px; color: var(--text-muted);
+      font-family: 'DM Mono', monospace;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/>
+        <line x1="8" y1="13" x2="16" y2="13"/>
+        <line x1="8" y1="17" x2="16" y2="17"/>
+      </svg>
+    </div>
+    <div>
+      <div class="header-title">Receipt Logger</div>
+      <div class="header-sub">Photo → Drive → Sheet</div>
+    </div>
+  </header>
+
+  <div class="container">
+
+
+
+    <!-- Staff & Date -->
+    <div class="card">
+      <div class="card-label">Details</div>
+      <div class="field">
+        <label for="staffName">Staff Name</label>
+        <input type="text" id="staffName" placeholder="e.g. Maria Santos" />
+      </div>
+      <div class="field">
+        <label for="receiptDate">
+          Receipt Date
+          <span class="badge">Backdating supported</span>
+        </label>
+        <input type="date" id="receiptDate" />
+      </div>
+    </div>
+
+    <!-- Photo -->
+    <div class="card">
+      <div class="card-label">Receipt Photo</div>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="handleFile(this)" />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        <div class="upload-zone-title">Tap to take photo or choose image</div>
+        <div class="upload-zone-hint">JPG, PNG — max 10MB</div>
+      </div>
+      <div class="preview-wrap" id="previewWrap">
+        <img id="previewImg" alt="Receipt preview" />
+        <div class="preview-name" id="previewName"></div>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <button class="submit-btn" id="submitBtn" onclick="submitReceipt()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      Log Receipt
+    </button>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-label" id="progressLabel">Uploading…</div>
+    </div>
+
+    <div class="status" id="statusMsg"></div>
+
+    <!-- Success -->
+    <div class="success-card" id="successCard">
+      <div class="success-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <span>Receipt logged successfully!</span>
+      </div>
+      <div class="success-row"><span class="key">staff</span><span class="val" id="s-staff"></span></div>
+      <div class="success-row"><span class="key">date</span><span class="val" id="s-date"></span></div>
+      <div class="success-row"><span class="key">file</span><span class="val"><a id="s-link" href="#" target="_blank" style="color: var(--accent);">View in Drive ↗</a></span></div>
+      <button class="reset-btn" onclick="resetForm()">+ Log another receipt</button>
+    </div>
+
+    <div class="footer">receipt-logger · powered by google apps script</div>
+  </div>
+
+  <script>
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbydnbaQPbQz2p1SdK1v_7qUlsc-kEUmhcUxqwqbyrIugLDdOjIiaV1Yv-S9FXqof51_/exec';
+
+    let selectedFile = null;
+
+    // ── Init ──────────────────────────────────────────────────
+    function init() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('receiptDate').value = today;
+    }
+
+    // ── File handling ─────────────────────────────────────────
+    function handleFile(input) {
+      const file = input.files[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      selectedFile = file;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.getElementById('previewImg');
+        img.src = e.target.result;
+        document.getElementById('previewWrap').style.display = 'block';
+        document.getElementById('previewName').textContent = file.name;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ── Submit ────────────────────────────────────────────────
+    async function submitReceipt() {
+      const staffName = document.getElementById('staffName').value.trim();
+      const date      = document.getElementById('receiptDate').value;
+
+      if (!staffName) return setStatus('Please enter a staff name.', 'error');
+      if (!date)      return setStatus('Please select a date.', 'error');
+      if (!selectedFile) return setStatus('Please select a receipt image.', 'error');
+
+      setStatus('', '');
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      document.getElementById('successCard').style.display = 'none';
+
+      try {
+        setProgress(20, 'Reading image…');
+        const base64Full = await toBase64(selectedFile);
+        const imageBase64 = base64Full.split(',')[1];
+
+        setProgress(55, 'Uploading to Google Drive…');
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageBase64,
+            mimeType: selectedFile.type,
+            date,
+            staffName,
+            submittedAt: new Date().toISOString()
+          })
+        });
+
+        setProgress(100, 'Done!');
+
+        // Show success (no-cors means we can't read response body, assume success)
+        document.getElementById('s-staff').textContent = staffName;
+        document.getElementById('s-date').textContent = date;
+        document.getElementById('s-link').href =
+          'https://drive.google.com/drive/folders/1uHq_g1hYhNUZXcGMXyuPYnDdpwRPLi1S';
+        document.getElementById('successCard').style.display = 'block';
+
+        setTimeout(() => {
+          document.getElementById('progressWrap').style.display = 'none';
+        }, 800);
+
+      } catch(err) {
+        setStatus('Error: ' + err.message, 'error');
+        document.getElementById('progressWrap').style.display = 'none';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────
+    function setProgress(pct, label) {
+      document.getElementById('progressWrap').style.display = 'block';
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('progressLabel').textContent = label;
+    }
+
+    function setStatus(msg, type) {
+      const el = document.getElementById('statusMsg');
+      el.textContent = msg;
+      el.className = 'status ' + (type || '');
+    }
+
+    function toBase64(file) {
+      return new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.onerror = rej;
+        r.readAsDataURL(file);
+      });
+    }
+
+    function resetForm() {
+      selectedFile = null;
+      document.getElementById('staffName').value = '';
+      document.getElementById('receiptDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('fileInput').value = '';
+      document.getElementById('previewWrap').style.display = 'none';
+      document.getElementById('previewImg').src = '';
+      document.getElementById('previewName').textContent = '';
+      document.getElementById('successCard').style.display = 'none';
+      document.getElementById('progressWrap').style.display = 'none';
+      setStatus('', '');
+    }
+
+    init();
+  </script>
+</body>
+</html>
